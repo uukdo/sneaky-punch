@@ -112,9 +112,16 @@
   // ---------- pendulum bag ----------
   const PIVOT = { x: W/2, y: 40 };
   const BAG_LEN = 240; // pivot to bag center
-  const BAG_W = 96, BAG_H = 190;
+  // 원본 이미지가 정사각형(500x500)이라 표시 크기도 정사각형으로 — 늘리거나 눌러서
+  // 찌그러지지 않게, 해상도가 최대한 보존되는 선에서 캔버스 구성에 맞는 크기로 잡음
+  const BAG_W = 240, BAG_H = 330;
   let angle = 0, angleVel = 0;
   let hitFlash = 0; // face reaction timer
+
+  const bagImage = new Image();
+  let bagImageReady = false;
+  bagImage.onload = () => { bagImageReady = true; };
+  bagImage.src = "assets/sandbagrumae.png";
 
   function stepBag(dt){
     const springK = 15, damping = 3.4;
@@ -148,116 +155,24 @@
     ctx.save();
     ctx.rotate(-angle);
     ctx.shadowColor = "rgba(0,0,0,.55)";
-    ctx.shadowBlur = 22;
+    ctx.shadowBlur = 20;
     ctx.beginPath();
-    ctx.ellipse(0, BAG_H*0.62, BAG_W*0.5, 14, 0, 0, Math.PI*2);
+    ctx.ellipse(0, BAG_H*0.62, BAG_W*0.3, 8, 0, 0, Math.PI*2);
     ctx.fillStyle = "rgba(0,0,0,.5)";
     ctx.fill();
     ctx.restore();
 
-    // capsule body — multi-stop gradient with an off-centre highlight band,
-    // like a glossy vinyl toy lit from the upper left
-    const r = BAG_W/2;
-    roundedCapsule(ctx, -BAG_W/2, -BAG_H/2, BAG_W, BAG_H, r);
-    const grad = ctx.createLinearGradient(-BAG_W/2,0,BAG_W/2,0);
-    grad.addColorStop(0, COLORS.bagShade);
-    grad.addColorStop(0.22, COLORS.bagDark);
-    grad.addColorStop(0.48, COLORS.bagHi);
-    grad.addColorStop(0.62, COLORS.bag);
-    grad.addColorStop(1, COLORS.bagDark);
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,.5)";
-    ctx.shadowBlur = 18;
-    ctx.shadowOffsetY = 8;
-    ctx.fillStyle = grad;
-    ctx.fill();
-    ctx.restore();
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = COLORS.ink;
-    ctx.stroke();
-
-    // thin white headband — a line wrapped around the head
-    const bandBottom = -BAG_H/2 + r*1.0;
-    const bandTop = bandBottom - 25;
-    ctx.save();
-    roundedCapsule(ctx, -BAG_W/2, -BAG_H/2, BAG_W, BAG_H, r);
-    ctx.clip();
-    const bandGrad = ctx.createLinearGradient(-BAG_W/2,0,BAG_W/2,0);
-    bandGrad.addColorStop(0, "#b9b9c1");
-    bandGrad.addColorStop(0.22, "#e2e2ea");
-    bandGrad.addColorStop(0.48, "#ffffff");
-    bandGrad.addColorStop(0.62, "#eceaf0");
-    bandGrad.addColorStop(1, "#a9a9b2");
-    ctx.fillStyle = bandGrad;
-    ctx.fillRect(-BAG_W/2-4, bandTop, BAG_W+8, bandBottom-bandTop);
-    ctx.restore();
-    // crisp ink edges top and bottom of the stripe
-    ctx.beginPath();
-    ctx.strokeStyle = COLORS.ink;
-    ctx.lineWidth = 2.5;
-    ctx.moveTo(-BAG_W/2, bandTop); ctx.lineTo(BAG_W/2, bandTop);
-    ctx.moveTo(-BAG_W/2, bandBottom); ctx.lineTo(BAG_W/2, bandBottom);
-    ctx.stroke();
-
-    // glossy specular streak — the "3D" highlight that sells the volume
-    ctx.save();
-    roundedCapsule(ctx, -BAG_W/2, -BAG_H/2, BAG_W, BAG_H, r);
-    ctx.clip();
-    const shine = ctx.createLinearGradient(-BAG_W*0.05,-BAG_H/2,BAG_W*0.18,BAG_H*0.1);
-    shine.addColorStop(0, "rgba(255,255,255,.55)");
-    shine.addColorStop(0.5, "rgba(255,255,255,.12)");
-    shine.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = shine;
-    ctx.beginPath();
-    ctx.ellipse(-BAG_W*0.16, -BAG_H*0.22, BAG_W*0.22, BAG_H*0.32, -0.35, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
-
-    // seams — start below the wrap band so they don't cut through the cloth
-    ctx.strokeStyle = "rgba(20,4,4,.45)";
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(-BAG_W/2+6, bandBottom+6); ctx.lineTo(-BAG_W/2+6, BAG_H/2-r*0.6);
-    ctx.moveTo(BAG_W/2-6, bandBottom+6); ctx.lineTo(BAG_W/2-6, BAG_H/2-r*0.6);
-    ctx.stroke();
-
-    // doodle face
-    const wince = hitFlash > 0;
-    ctx.fillStyle = COLORS.ink;
-    const eyeY = -18;
-    if (wince){
-      drawX(ctx, -22, eyeY, 8);
-      drawX(ctx, 22, eyeY, 8);
-      ctx.beginPath();
-      ctx.arc(0, 14, 12, 0.15*Math.PI, 0.85*Math.PI);
-      ctx.lineWidth = 3.5; ctx.strokeStyle = COLORS.ink; ctx.stroke();
-    } else {
-      ctx.beginPath(); ctx.arc(-22, eyeY, 5, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(22, eyeY, 5, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath();
-      ctx.arc(0, 6, 14, 0.1*Math.PI, 0.9*Math.PI);
-      ctx.lineWidth = 3.5; ctx.strokeStyle = COLORS.ink; ctx.stroke();
+    // 샌드백 이미지 — 원본 비율 그대로, 늘리거나 눌리지 않게 정사각형 박스에 그대로 그림
+    if (bagImageReady){
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,.4)";
+      ctx.shadowBlur = 13;
+      ctx.shadowOffsetY = 6;
+      ctx.drawImage(bagImage, -BAG_W/2, -BAG_H/2, BAG_W, BAG_H);
+      ctx.restore();
     }
+
     ctx.restore();
-  }
-
-  function drawX(c,x,y,s){
-    c.save();
-    c.strokeStyle = COLORS.ink; c.lineWidth = 3;
-    c.beginPath(); c.moveTo(x-s/2,y-s/2); c.lineTo(x+s/2,y+s/2);
-    c.moveTo(x+s/2,y-s/2); c.lineTo(x-s/2,y+s/2);
-    c.stroke();
-    c.restore();
-  }
-
-  function roundedCapsule(c,x,y,w,h,r){
-    c.beginPath();
-    c.moveTo(x+r,y);
-    c.arcTo(x+w,y,x+w,y+h,r);
-    c.arcTo(x+w,y+h,x,y+h,r);
-    c.arcTo(x,y+h,x,y,r);
-    c.arcTo(x,y,x+w,y,r);
-    c.closePath();
   }
 
   // ---------- gloves ----------
@@ -357,7 +272,7 @@
   let punchQueue = []; // {side, t, contactAt, applied}
   let particles = []; // onomatopoeia bursts {x,y,t,text,spin}
   let nextSide = "left";
-  const ONOMATOPOEIA = ["퍽!","퍽퍽!","빡!","카악!","텅!","훅!","슉!"];
+  const ONOMATOPOEIA = ["풉!","푸핫!","꺄핳!","종강!","하!","낄낄!"];
 
   function triggerPunch(){
     const side = nextSide;
@@ -713,6 +628,7 @@
     challengeList.innerHTML = "";
     if (!rows.length){
       const li = document.createElement("li");
+      if (i < 3) li.classList.add(`sb-rank-top-${i + 1}`);
       li.className = "sb-rank-empty";
       li.textContent = "아직 등록된 기록이 없어요 — 첫 번째가 되어보세요!";
       challengeList.appendChild(li);
