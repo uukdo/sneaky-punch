@@ -211,10 +211,10 @@ canvas.sb-canvas{ display:block; width:100%; height:100%; touch-action:manipulat
   padding:0;
   display:grid;
   gap:6px;
-  max-height:220px;
-  overflow-y:auto;
+  max-height:none;
+  overflow-y:visible;
   text-align:left;
-  font-family:"Press Start 2P", monospace;
+  font-family:"Galmuri11", "Press Start 2P", monospace;
 }
 .sb-rank-list li{
   display:flex;
@@ -248,25 +248,53 @@ canvas.sb-canvas{ display:block; width:100%; height:100%; touch-action:manipulat
   text-shadow:0 0 8px rgba(255,61,120,.6);
   flex:none;
 }
-/* Challenge TOP 3 */
+.sb-rank-list .sb-rank-pos,
+.sb-rank-list .sb-rank-name,
+.sb-rank-list .sb-rank-score {
+  font-family:"Galmuri11", "Press Start 2P", monospace;
+}
+
+/* Challenge TOP 3 — 1등 핑크 / 2등 옐로 / 3등 그린, 굵게 + 형광 네온 글로우 */
+.sb-rank-list li.sb-rank-top-1,
+.sb-rank-list li.sb-rank-top-2,
+.sb-rank-list li.sb-rank-top-3 {
+  font-weight: 700;
+}
+
 .sb-rank-list li.sb-rank-top-1 {
+  border-color: rgba(255, 61, 120, 0.9);
+  background: rgba(255, 61, 120, 0.08);
+  box-shadow: 0 0 10px rgba(255, 61, 120, 0.4);
+}
+.sb-rank-list li.sb-rank-top-1 .sb-rank-pos,
+.sb-rank-list li.sb-rank-top-1 .sb-rank-name,
+.sb-rank-list li.sb-rank-top-1 .sb-rank-score {
+  color: #ff5fa8;
+  text-shadow: 0 0 4px #fff8, 0 0 8px #ff3d78, 0 0 16px #ff3d78, 0 0 28px rgba(255,61,120,.7);
+}
+
+.sb-rank-list li.sb-rank-top-2 {
   border-color: rgba(255, 194, 60, 0.9);
   background: rgba(255, 194, 60, 0.08);
-  box-shadow: 0 0 8px rgba(255, 194, 60, 0.35);
-  text-shadow: 0 0 7px rgba(255, 194, 60, 0.7);
+  box-shadow: 0 0 10px rgba(255, 194, 60, 0.4);
 }
-.sb-rank-list li.sb-rank-top-2 {
-  border-color: rgba(52, 231, 200, 0.85);
-  background: rgba(52, 231, 200, 0.07);
-  box-shadow: 0 0 8px rgba(52, 231, 200, 0.3);
-  text-shadow: 0 0 7px rgba(52, 231, 200, 0.65);
+.sb-rank-list li.sb-rank-top-2 .sb-rank-pos,
+.sb-rank-list li.sb-rank-top-2 .sb-rank-name,
+.sb-rank-list li.sb-rank-top-2 .sb-rank-score {
+  color: #ffd65c;
+  text-shadow: 0 0 4px #fff8, 0 0 8px #ffc23c, 0 0 16px #ffc23c, 0 0 28px rgba(255,194,60,.7);
 }
 
 .sb-rank-list li.sb-rank-top-3 {
-  border-color: rgba(255, 61, 120, 0.85);
-  background: rgba(255, 61, 120, 0.07);
-  box-shadow: 0 0 8px rgba(255, 61, 120, 0.3);
-  text-shadow: 0 0 7px rgba(255, 61, 120, 0.65);
+  border-color: rgba(57, 255, 106, 0.9);
+  background: rgba(57, 255, 106, 0.08);
+  box-shadow: 0 0 10px rgba(57, 255, 106, 0.4);
+}
+.sb-rank-list li.sb-rank-top-3 .sb-rank-pos,
+.sb-rank-list li.sb-rank-top-3 .sb-rank-name,
+.sb-rank-list li.sb-rank-top-3 .sb-rank-score {
+  color: #5cff8f;
+  text-shadow: 0 0 4px #fff8, 0 0 8px #39ff6a, 0 0 16px #39ff6a, 0 0 28px rgba(57,255,106,.7);
 }
 .sb-rank-empty{
   justify-content:center;

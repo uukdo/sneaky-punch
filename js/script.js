@@ -114,7 +114,7 @@
   const BAG_LEN = 240; // pivot to bag center
   // 원본 이미지가 정사각형(500x500)이라 표시 크기도 정사각형으로 — 늘리거나 눌러서
   // 찌그러지지 않게, 해상도가 최대한 보존되는 선에서 캔버스 구성에 맞는 크기로 잡음
-  const BAG_W = 240, BAG_H = 330;
+  const BAG_W = 200, BAG_H = 275;
   let angle = 0, angleVel = 0;
   let hitFlash = 0; // face reaction timer
 
@@ -181,16 +181,28 @@
     left:  { active:false, t:0 },
     right: { active:false, t:0 }
   };
+  // 좌우 글러브가 서로 다른 높이/기울기/박자로 살짝씩 흔들리게 하는 성격치 —
+  // 완전히 대칭이면 뻣뻣해 보여서, 일부러 값을 다르게 줘서 생동감을 더함
+  const GLOVE_STYLE = {
+    left:  { yOffset:-16, tilt: 0.75, bobAmp:5, bobSpeed:1.6, bobPhase:0.0, swayAmp:0.05, swaySpeed:1.1 },
+    right: { yOffset: 10, tilt: -0.55, bobAmp:7, bobSpeed:1.3, bobPhase:1.7, swayAmp:0.07, swaySpeed:0.9 },
+  };
   function glovePos(side){
     const g = gloves[side];
+    const style = GLOVE_STYLE[side];
+    const t = performance.now() / 1000;
     const idleX = side==="left" ? PIVOT.x - GLOVE_IDLE_X : PIVOT.x + GLOVE_IDLE_X;
-    const y = PIVOT.y + BAG_LEN - GLOVE_Y;
-    if (!g.active) return { x:idleX, y };
+    const bob = Math.sin(t*style.bobSpeed + style.bobPhase) * style.bobAmp;
+    const y = PIVOT.y + BAG_LEN - GLOVE_Y + style.yOffset + bob;
+    const sway = Math.sin(t*style.swaySpeed + style.bobPhase) * style.swayAmp;
+    if (!g.active) return { x:idleX, y, angle: style.tilt + sway };
     const dur = 0.26;
     const p = Math.min(g.t/dur, 1);
     const curve = p < 0.4 ? easeOutCubic(p/0.4) : 1 - easeInCubic((p-0.4)/0.6);
     const travel = (side==="left" ? 1 : -1) * (GLOVE_IDLE_X - 70) * curve;
-    return { x: idleX + travel, y };
+    // 뻗어나가는 순간 팔이 쭉 돌아가는 느낌을 더하는 펀치 킥 회전
+    const punchKick = (side==="left" ? -1 : 1) * curve * 0.22;
+    return { x: idleX + travel, y, angle: style.tilt + punchKick };
   }
   function easeOutCubic(t){ return 1-Math.pow(1-t,3); }
   function easeInCubic(t){ return t*t*t; }
@@ -220,49 +232,85 @@
     ctx.stroke();
   }
 
+  // 둥근 캡슐(양 끝이 반원인 알약 모양) 경로 — 손목 커프에 사용
+  function roundedCapsule(c,x,y,w,h,r){
+    c.beginPath();
+    c.moveTo(x+r,y);
+    c.arcTo(x+w,y,x+w,y+h,r);
+    c.arcTo(x+w,y+h,x,y+h,r);
+    c.arcTo(x,y+h,x,y,r);
+    c.arcTo(x,y,x+w,y,r);
+    c.closePath();
+  }
+
+  // 참고 이미지처럼 둥근 손등, 옆 엄지, 넓은 손목 커프를 가진 복싱글러브 외곽선
+  function traceGloveBody(){
+    ctx.beginPath();
+    ctx.moveTo(-31, 25);
+    ctx.bezierCurveTo(-40, 10, -43, -18, -36, -36);
+    ctx.bezierCurveTo(-30, -51, -17, -57, 1, -57);
+    ctx.bezierCurveTo(20, -57, 33, -51, 38, -37);
+    ctx.bezierCurveTo(44, -19, 41, 8, 31, 25);
+    ctx.lineTo(22, 34);
+    ctx.lineTo(-23, 34);
+    ctx.closePath();
+  }
+
   function drawGlove(side){
     const p = glovePos(side);
+    // 각 글러브의 엄지가 화면 중앙을 향하게 한다.
+    const inward = side === "left" ? 1 : -1;
     ctx.save();
     ctx.translate(p.x, p.y);
+    ctx.rotate(p.angle || 0);
 
-    // thumb (drawn first so the main fist overlaps its base)
-    const tx = side==="left" ? 20 : -20;
-    ctx.beginPath();
-    ctx.ellipse(tx, -18, 12, 16, 0, 0, Math.PI*2);
-    fillGlossyNeon(tx, -18, 13);
-
-    // main fist
-    ctx.beginPath();
-    ctx.arc(0,0,34,0,Math.PI*2);
-    fillGlossyNeon(0, 0, 34);
-    // crisp dark outline on top so the shape reads clean under the glow
-    ctx.lineWidth = 2.5; ctx.strokeStyle = COLORS.ink; ctx.stroke();
-
-    // glossy specular highlight
+    // 엄지는 본체 뒤에 먼저 그려, 실제 글러브처럼 손등에 연결된 형태로 보이게 한다.
     ctx.save();
+    ctx.scale(inward, 1);
     ctx.beginPath();
-    ctx.arc(0,0,34,0,Math.PI*2);
+    ctx.moveTo(24, 23);
+    ctx.bezierCurveTo(38, 17, 48, 2, 51, -16);
+    ctx.bezierCurveTo(54, -31, 48, -42, 39, -44);
+    ctx.bezierCurveTo(28, -46, 20, -37, 19, -24);
+    ctx.bezierCurveTo(18, -7, 23, 9, 24, 23);
+    ctx.closePath();
+    fillGlossyNeon(35, -15, 25);
+    ctx.restore();
+
+    // 넓고 둥근 손등(주먹) 본체
+    traceGloveBody();
+    fillGlossyNeon(-8, -22, 46);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = COLORS.ink;
+    ctx.stroke();
+
+    // 기존 광택 스타일은 실루엣 안쪽에만 유지한다.
+    ctx.save();
+    traceGloveBody();
     ctx.clip();
     ctx.beginPath();
-    ctx.ellipse(-11,-13,14,10,-0.4,0,Math.PI*2);
+    ctx.ellipse(-13, -30, 17, 10, -0.35, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(255,255,255,.22)";
     ctx.fill();
     ctx.restore();
 
-    // cuff
-    const cx = side==="left" ? 28 : -28;
-    ctx.beginPath();
-    ctx.ellipse(cx, 6, 14, 24, 0, 0, Math.PI*2);
-    fillGlossyNeon(cx, 6, 16);
-    ctx.lineWidth = 2.5; ctx.strokeStyle = COLORS.ink; ctx.stroke();
+    // 손목을 감싸는 낮고 넓은 커프
+    roundedCapsule(ctx, -34, 27, 68, 30, 10);
+    fillGlossyNeon(-7, 37, 38);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = COLORS.ink;
+    ctx.stroke();
 
-    // neon stitch detail
+    // 커프의 네온 스티치
     ctx.save();
     ctx.shadowColor = COLORS.gloveNeon;
     ctx.shadowBlur = 8;
     ctx.strokeStyle = COLORS.gloveNeon;
     ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(cx-6,-2); ctx.lineTo(cx+6,2); ctx.moveTo(cx-6,10); ctx.lineTo(cx+6,14); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-25, 33);
+    ctx.lineTo(25, 33);
+    ctx.stroke();
     ctx.restore();
 
     ctx.restore();
@@ -628,7 +676,6 @@
     challengeList.innerHTML = "";
     if (!rows.length){
       const li = document.createElement("li");
-      if (i < 3) li.classList.add(`sb-rank-top-${i + 1}`);
       li.className = "sb-rank-empty";
       li.textContent = "아직 등록된 기록이 없어요 — 첫 번째가 되어보세요!";
       challengeList.appendChild(li);
@@ -636,6 +683,7 @@
     }
     rows.forEach((row, i) => {
       const li = document.createElement("li");
+      if (i < 3) li.classList.add(`sb-rank-top-${i + 1}`);
       const pos = document.createElement("span");
       pos.className = "sb-rank-pos";
       pos.textContent = "#" + (i+1);
