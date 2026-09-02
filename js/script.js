@@ -21,6 +21,12 @@
   const startBtn = document.getElementById("sbStartBtn");
   const totalIntro = document.getElementById("sbTotalIntro");
   const bestIntro = document.getElementById("sbBestIntro");
+  const rankBtn = document.getElementById("sbRankBtn");
+  const rankOverlay = document.getElementById("sbRankOverlay");
+  const rankStatus = document.getElementById("sbRankStatus");
+  const rankCloseBtn = document.getElementById("sbRankCloseBtn");
+  const globalPunchesEl = document.getElementById("sbGlobalPunches");
+  const globalComboEl = document.getElementById("sbGlobalCombo");
 
   // ---------- persistence ----------
   let totalPunches = 0, bestCombo = 0;
@@ -506,6 +512,7 @@
     combo += 1;
     comboTimer = 1.3;
     totalPunches += 1;
+    unsyncedPunches += 1;
     if (combo > bestCombo){ bestCombo = combo; }
     stress = Math.min(100, stress + 4.5);
     if (stress >= 100 && !celebrated){
@@ -516,7 +523,7 @@
     updateHud();
   }
 
-  // the "완전히 시원해졌다" moment — a burst of steam blowing off the bag
+  // the moment — a burst of steam blowing off the bag
   // plus a satisfying screen shake, instead of a text popup
   function releaseBurst(){
     triggerShake(0.35, 15);
@@ -587,6 +594,59 @@
     introVisible = false;
     intro.hidden = true;
   });
+
+  // ---------- global stats ----------
+  // punches are batched locally and flushed periodically so mashing keys
+  // doesn't fire a network request per punch
+  let unsyncedPunches = 0;
+  let syncingStats = false;
+
+  async function flushGlobalStats(){
+    if (syncingStats) return;
+    if (!window.Leaderboard || !window.Leaderboard.configured()) return;
+    const toSend = unsyncedPunches;
+    if (toSend <= 0) return;
+    syncingStats = true;
+    const res = await window.Leaderboard.reportProgress(toSend, bestCombo);
+    syncingStats = false;
+    if (res.ok) unsyncedPunches -= toSend; 
+  }
+
+  setInterval(flushGlobalStats, 5000);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) flushGlobalStats(); });
+  window.addEventListener("pagehide", flushGlobalStats);
+
+  async function loadGlobalStats(){
+    globalPunchesEl.textContent = "…";
+    globalComboEl.textContent = "…";
+    rankStatus.textContent = "";
+    await flushGlobalStats(); // push anything pending first so this feels current
+    if (!window.Leaderboard || !window.Leaderboard.configured()){
+      globalPunchesEl.textContent = "–";
+      globalComboEl.textContent = "–";
+      rankStatus.textContent = "아직 설정되지 않았어요.";
+      return;
+    }
+    const res = await window.Leaderboard.fetchGlobal();
+    if (!res.ok){
+      globalPunchesEl.textContent = "–";
+      globalComboEl.textContent = "–";
+      rankStatus.textContent = "불러오지 못했어요. 잠시 후 다시 시도해주세요.";
+      return;
+    }
+    globalPunchesEl.textContent = res.total.toLocaleString();
+    globalComboEl.textContent = res.best + "x";
+  }
+
+  function openRank(){
+    rankOverlay.hidden = false;
+    loadGlobalStats();
+  }
+  function closeRank(){ rankOverlay.hidden = true; }
+
+  rankBtn.addEventListener("click", openRank);
+  rankCloseBtn.addEventListener("click", closeRank);
+  rankOverlay.addEventListener("click", (e) => { if (e.target === rankOverlay) closeRank(); });
 
   // ---------- sizing ----------
   function fitCanvas(){

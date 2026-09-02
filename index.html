@@ -21,7 +21,30 @@
         </div>
       </div>
 
+      <button class="sb-rankbtn" id="sbRankBtn" type="button">STATS</button>
+
       <p class="sb-hint">PRESS ANY KEY</p>
+
+      <div class="sb-overlay" id="sbRankOverlay" hidden>
+        <div class="sb-card sb-rank-card">
+          <p class="sb-eyebrow">EVERYONE, TOGETHER</p>
+          <h2 class="sb-title sb-rank-title">GLOBAL STATS</h2>
+
+          <div class="sb-stat-grid">
+            <div class="sb-stat-box">
+              <span class="sb-stat-box-label">TOTAL PUNCHES</span>
+              <span class="sb-stat-box-value" id="sbGlobalPunches">–</span>
+            </div>
+            <div class="sb-stat-box">
+              <span class="sb-stat-box-label">BEST COMBO</span>
+              <span class="sb-stat-box-value" id="sbGlobalCombo">–</span>
+            </div>
+          </div>
+          <p class="sb-rank-status" id="sbRankStatus"></p>
+
+          <button class="sb-btn sb-rank-close" id="sbRankCloseBtn" type="button">닫기</button>
+        </div>
+      </div>
 
       <div class="sb-overlay" id="sbIntro">
         <div class="sb-card">
@@ -32,15 +55,16 @@
             <li><span class="sb-key">아무 키</span><span>누를 때마다 샌드백 한 대씩 손가락 운동</span></li>
             <li><span class="sb-key">클릭</span><span>마우스로 직접 때려도 ㄱㅊ</span></li>
             <li><span class="sb-key">콤보</span><span>쉬지 않고 패대면 콤보가 쌓여요</span></li>
-            <li><span class="sb-key">100%</span><span>게이지가 가득 차면 스팀이 터져요</span></li>
+            <li><span class="sb-key">100%</span><span>게이지가 가득 차면 스팀이 막</span></li>
           </ul>
           <button class="sb-btn" id="sbStartBtn">Start</button>
-          <div class="sb-stat-row"><span>통산 펀치 <b id="sbTotalIntro">0</b>회 · 최고 콤보 <b id="sbBestIntro">0</b></span></div>
+          <div class="sb-stat-row"><span>통산 개인 펀치 <b id="sbTotalIntro">0</b>회 · 최고 콤보 <b id="sbBestIntro">0</b></span></div>
         </div>
       </div>
     </div>
   </div>
 
+  <script src="js/leaderboard.js"></script>
   <script src="js/script.js"></script>
 </body>
 </html>
