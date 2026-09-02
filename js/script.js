@@ -4,7 +4,7 @@
 
   const W = 860, H = 640;
   const COLORS = {
-    ink:"#0c0a10", // dark outline for bag/gloves/doodle — not the HUD text color
+    ink:"#0c0a10", // 테두리 색
     bag:"#e8382f", bagDark:"#9c1a17", bagShade:"#5c0d0e", bagHi:"#ff8a72",
     glove:"#131318", gloveDark:"#020203", gloveHi:"#3a3a44", gloveNeon:"#ff3d78",
     rope:"#3a3f4e"
@@ -52,8 +52,7 @@
   totalIntro.textContent = totalPunches;
   bestIntro.textContent = bestCombo;
 
-  // ---------- scene background: shifts hue with the stress gauge ----------
-  // calm (empty gauge) → hot (full gauge), like the room heating up as you punch
+  // ---------- 배경 (게이지가 찰수록 뜨거운 색으로) ----------
   const BG_CALM = [11,13,18], BG_HOT = [42,9,22];
   const FLOOR_CALM = [23,26,36], FLOOR_HOT = [58,14,30];
   const BEAM_CALM = [32,36,47], BEAM_HOT = [58,20,34];
@@ -76,7 +75,7 @@
     ctx.fillStyle = rgbStr(bg);
     ctx.fillRect(0,0,W,H);
 
-    // overhead spotlight — glows hotter as the gauge fills
+    // 조명 (게이지 높을수록 밝아짐)
     const spot = ctx.createRadialGradient(W/2,H*0.4,20,W/2,H*0.4,H*0.75);
     spot.addColorStop(0, `rgba(255,61,120,${(0.14+t*0.24).toFixed(3)})`);
     spot.addColorStop(0.4, `rgba(52,231,200,${(0.05+t*0.02).toFixed(3)})`);
@@ -84,7 +83,7 @@
     ctx.fillStyle = spot;
     ctx.fillRect(0,0,W,H);
 
-    // faint floor grid, receding toward the bag
+    // 바닥 격자무늬
     ctx.strokeStyle = "rgba(255,255,255,.035)";
     ctx.lineWidth = 1;
     for (let x=-200; x<=W+200; x+=60){
@@ -94,7 +93,7 @@
       ctx.stroke();
     }
 
-    // floor — blended softly into the background, no hard seam/box
+    // 바닥면
     const floorY = H-80;
     const blend = ctx.createLinearGradient(0, floorY-36, 0, floorY);
     blend.addColorStop(0, "rgba(0,0,0,0)");
@@ -104,19 +103,16 @@
     ctx.fillStyle = rgbStr(floor);
     ctx.fillRect(0, floorY, W, H-floorY);
 
-    // ceiling beam
+    // 천장 빔
     ctx.fillStyle = rgbStr(beam);
     ctx.fillRect(W/2-70, 18, 140, 14);
   }
 
   // ---------- pendulum bag ----------
   const PIVOT = { x: W/2, y: 40 };
-  const BAG_LEN = 240; // pivot to bag center
-  // 원본 이미지가 정사각형(500x500)이라 표시 크기도 정사각형으로 — 늘리거나 눌러서
-  // 찌그러지지 않게, 해상도가 최대한 보존되는 선에서 캔버스 구성에 맞는 크기로 잡음
-  const BAG_W = 200, BAG_H = 275;
+  const BAG_LEN = 240; // 중심축 ~ 샌드백 거리
+  const BAG_W = 200, BAG_H = 275; // 샌드백 이미지 표시 크기 (원본 비율 유지)
   let angle = 0, angleVel = 0;
-  let hitFlash = 0; // face reaction timer
 
   const bagImage = new Image();
   let bagImageReady = false;
@@ -130,7 +126,6 @@
     angle += angleVel*dt;
     if (angle > 1.15){ angle = 1.15; if (angleVel>0) angleVel = 0; }
     if (angle < -1.15){ angle = -1.15; if (angleVel<0) angleVel = 0; }
-    if (hitFlash > 0) hitFlash -= dt;
   }
 
   function bagCenter(){
@@ -139,7 +134,7 @@
 
   function drawBag(){
     const c = bagCenter();
-    // rope
+    // 로프
     ctx.strokeStyle = COLORS.rope;
     ctx.lineWidth = 5;
     ctx.beginPath();
@@ -151,7 +146,7 @@
     ctx.translate(c.x, c.y);
     ctx.rotate(angle);
 
-    // shadow beneath — soft-blurred so the bag reads as lifted off the floor
+    // 접지 그림자
     ctx.save();
     ctx.rotate(-angle);
     ctx.shadowColor = "rgba(0,0,0,.55)";
@@ -162,7 +157,7 @@
     ctx.fill();
     ctx.restore();
 
-    // 샌드백 이미지 — 원본 비율 그대로, 늘리거나 눌리지 않게 정사각형 박스에 그대로 그림
+    // 샌드백 이미지
     if (bagImageReady){
       ctx.save();
       ctx.shadowColor = "rgba(0,0,0,.4)";
@@ -176,13 +171,12 @@
   }
 
   // ---------- gloves ----------
-  const GLOVE_IDLE_X = 250, GLOVE_Y = 40; // relative to pivot
+  const GLOVE_IDLE_X = 250, GLOVE_Y = 40; // 중심축 기준 위치
   let gloves = {
     left:  { active:false, t:0 },
     right: { active:false, t:0 }
   };
-  // 좌우 글러브가 서로 다른 높이/기울기/박자로 살짝씩 흔들리게 하는 성격치 —
-  // 완전히 대칭이면 뻣뻣해 보여서, 일부러 값을 다르게 줘서 생동감을 더함
+  // 좌우 글러브가 각자 다르게 흔들리도록 하는 파라미터 (생동감용)
   const GLOVE_STYLE = {
     left:  { yOffset:-16, tilt: 0.75, bobAmp:5, bobSpeed:1.6, bobPhase:0.0, swayAmp:0.05, swaySpeed:1.1 },
     right: { yOffset: 10, tilt: -0.55, bobAmp:7, bobSpeed:1.3, bobPhase:1.7, swayAmp:0.07, swaySpeed:0.9 },
@@ -200,16 +194,14 @@
     const p = Math.min(g.t/dur, 1);
     const curve = p < 0.4 ? easeOutCubic(p/0.4) : 1 - easeInCubic((p-0.4)/0.6);
     const travel = (side==="left" ? 1 : -1) * (GLOVE_IDLE_X - 70) * curve;
-    // 뻗어나가는 순간 팔이 쭉 돌아가는 느낌을 더하는 펀치 킥 회전
+    // 팔이 뻗을 때 살짝 더 돌아가는 펀치 킥
     const punchKick = (side==="left" ? -1 : 1) * curve * 0.22;
     return { x: idleX + travel, y, angle: style.tilt + punchKick };
   }
   function easeOutCubic(t){ return 1-Math.pow(1-t,3); }
   function easeInCubic(t){ return t*t*t; }
 
-  // fills the current path with a black→highlight gradient, then rims it
-  // with a soft neon glow plus a crisp bright edge — black rubber with neon
-  // piping, lit like a glossy 3D figure
+  // 그라데이션 채우기 + 네온 테두리
   function fillGlossyNeon(cx, cy, rx){
     const g = ctx.createRadialGradient(cx-rx*0.35, cy-rx*0.4, rx*0.15, cx, cy, rx*1.4);
     g.addColorStop(0, COLORS.gloveHi);
@@ -232,7 +224,7 @@
     ctx.stroke();
   }
 
-  // 둥근 캡슐(양 끝이 반원인 알약 모양) 경로 — 손목 커프에 사용
+  // 알약 모양 경로 (손목 커프용)
   function roundedCapsule(c,x,y,w,h,r){
     c.beginPath();
     c.moveTo(x+r,y);
@@ -243,7 +235,7 @@
     c.closePath();
   }
 
-  // 참고 이미지처럼 둥근 손등, 옆 엄지, 넓은 손목 커프를 가진 복싱글러브 외곽선
+  // 글러브 손등 외곽선
   function traceGloveBody(){
     ctx.beginPath();
     ctx.moveTo(-31, 25);
@@ -264,7 +256,7 @@
     ctx.translate(p.x, p.y);
     ctx.rotate(p.angle || 0);
 
-    // 엄지는 본체 뒤에 먼저 그려, 실제 글러브처럼 손등에 연결된 형태로 보이게 한다.
+    // 엄지 (손등보다 먼저 그림)
     ctx.save();
     ctx.scale(inward, 1);
     ctx.beginPath();
@@ -284,7 +276,7 @@
     ctx.strokeStyle = COLORS.ink;
     ctx.stroke();
 
-    // 기존 광택 스타일은 실루엣 안쪽에만 유지한다.
+    // 광택 (실루엣 안쪽에만)
     ctx.save();
     traceGloveBody();
     ctx.clip();
@@ -316,7 +308,7 @@
     ctx.restore();
   }
 
-  // ---------- punch queue / impact particles ----------
+  // ---------- 펀치 큐 / 임팩트 파티클 ----------
   let punchQueue = []; // {side, t, contactAt, applied}
   let particles = []; // onomatopoeia bursts {x,y,t,text,spin}
   let nextSide = "left";
@@ -354,7 +346,6 @@
   function applyImpact(side){
     const impulse = 1.0 + Math.random()*0.35;
     angleVel += (side === "left" ? impulse : -impulse);
-    hitFlash = 0.32;
     const c = bagCenter();
     const px = c.x + (side==="left" ? -BAG_W*0.4 : BAG_W*0.4);
     const py = c.y - 10 + Math.random()*20;
@@ -384,7 +375,7 @@
       ctx.translate(p.x, p.y - p.t*46);
       ctx.rotate(p.spin);
       ctx.scale(scale, scale);
-      // burst shape
+      // 별모양 파편
       ctx.beginPath();
       const spikes = 8, rOuter = 20, rInner = 9;
       for (let i=0;i<spikes*2;i++){
@@ -406,7 +397,7 @@
     }
   }
 
-  // ---------- steam / smoke: the stress visibly "blowing off" the bag ----------
+  // ---------- 스모크 파티클 ----------
   let smokeParticles = []; // {x,y,t,life,vx,vy,size,alpha,grow}
   let ambientSmokeTimer = 0;
 
@@ -433,8 +424,7 @@
     }
     smokeParticles = smokeParticles.filter(s => s.t < s.life);
 
-
-    // faster, the closer you get to a full release
+    // 게이지 높을수록 더 자주 발생
     if (!reduceMotion){
       ambientSmokeTimer -= dt;
       if (stress > 12 && ambientSmokeTimer <= 0){
@@ -498,8 +488,7 @@
     updateHud();
   }
 
-  // the moment — a burst of steam blowing off the bag
-  // plus a satisfying screen shake, instead of a text popup
+  // 게이지 100% 도달 시 스팀 버스트 + 화면 흔들림
   function releaseBurst(){
     triggerShake(0.35, 15);
     const c = bagCenter();
@@ -570,9 +559,7 @@
     intro.hidden = true;
   });
 
-  // ---------- global stats ----------
-  // punches are batched locally and flushed periodically so mashing keys
-  // doesn't fire a network request per punch
+  // ---------- 글로벌 통계 (펀치를 모았다가 주기적으로 전송) ----------
   let unsyncedPunches = 0;
   let syncingStats = false;
 
@@ -623,13 +610,13 @@
   rankCloseBtn.addEventListener("click", closeRank);
   rankOverlay.addEventListener("click", (e) => { if (e.target === rankOverlay) closeRank(); });
 
-  // ---------- 60-second Challenge (named leaderboard) ----------
+  // ---------- 60초 챌린지 ----------
   let challengeActive = false;
   let challengeTimeLeft = 0;
   let challengePunches = 0;
-  let lastChallengeScore = null;   // last completed run's punch count or null
+  let lastChallengeScore = null;   // 직전 챌린지 점수
   let lastChallengeSubmitted = false;
-  let challengeTickPulse = 0;      // 0..1, spikes on each second tick then decays — drives the pixel-glow "pop"
+  let challengeTickPulse = 0;      // 초마다 반짝이는 펄스 (0~1)
   const CHALLENGE_DURATION = 60;
 
   try { challengeNameInput.value = localStorage.getItem("sbChallengeName") || ""; } catch(e){}
@@ -654,8 +641,7 @@
     if (curSec !== prevSec){
       updateChallengeButton();
       challengeTickPulse = 1;
-      // last 5 beats: a small rhythmic nudge on the bag — a tick-tock wobble,
-      // nowhere near a real punch impulse
+      // 마지막 5초는 매초 살짝 흔들림
       if (curSec <= 5 && curSec > 0){
         const dir = curSec % 2 === 0 ? 1 : -1;
         angleVel += dir * 0.26;
@@ -772,8 +758,7 @@
     showChallengeIdle();
   });
 
-  // big glowing pixel-font countdown, hovering above the bag for the whole
-  // 60 seconds — turns red inside 10s, and grows/pops with each beat inside 5s
+  // 챌린지 카운트다운 (10초 이하면 빨강, 5초 이하면 확대)
   function drawChallengeCountdown(){
     if (!challengeActive) return;
     const secs = Math.max(0, Math.ceil(challengeTimeLeft));
@@ -782,7 +767,7 @@
 
     let scale = 1;
     if (critical){
-      const t = 1 - (secs / 5); // 0 at 5s left → 1 at 0s left
+      const t = 1 - (secs / 5); // 5초 남았을 때 0, 0초일 때 1
       scale = 1 + t * 0.85;
     }
     const pop = 1 + challengeTickPulse * 0.4;
@@ -799,7 +784,7 @@
     ctx.shadowBlur = 20 + challengeTickPulse * 22;
     ctx.fillStyle = fill;
     ctx.fillText(String(secs), W/2, 112);
-    // second pass: wider, softer bloom for the pixel "smear" glow
+    // 번짐 효과용 2차 렌더
     ctx.shadowBlur = 42 + challengeTickPulse * 30;
     ctx.globalAlpha = 0.55;
     ctx.fillText(String(secs), W/2, 112);
