@@ -666,6 +666,7 @@
   let challengePunches = 0;
   let lastChallengeScore = null;   // last completed run's punch count or null
   let lastChallengeSubmitted = false;
+  let challengeTickPulse = 0;      // 0..1, spikes on each second tick then decays — drives the pixel-glow "pop"
   const CHALLENGE_DURATION = 60;
 
   try { challengeNameInput.value = localStorage.getItem("sbChallengeName") || ""; } catch(e){}
@@ -682,10 +683,21 @@
   }
 
   function stepChallenge(dt){
+    if (challengeTickPulse > 0) challengeTickPulse = Math.max(0, challengeTickPulse - dt*4.5);
     if (!challengeActive) return;
     const prevSec = Math.ceil(challengeTimeLeft);
     challengeTimeLeft -= dt;
-    if (Math.ceil(challengeTimeLeft) !== prevSec) updateChallengeButton();
+    const curSec = Math.ceil(Math.max(challengeTimeLeft, 0));
+    if (curSec !== prevSec){
+      updateChallengeButton();
+      challengeTickPulse = 1;
+      // last 5 beats: a small rhythmic nudge on the bag — a tick-tock wobble,
+      // nowhere near a real punch impulse
+      if (curSec <= 5 && curSec > 0){
+        const dir = curSec % 2 === 0 ? 1 : -1;
+        angleVel += dir * 0.26;
+      }
+    }
     if (challengeTimeLeft <= 0){
       challengeActive = false;
       challengeTimeLeft = 0;
@@ -796,6 +808,40 @@
     showChallengeIdle();
   });
 
+  // big glowing pixel-font countdown, hovering above the bag for the whole
+  // 60 seconds — turns red inside 10s, and grows/pops with each beat inside 5s
+  function drawChallengeCountdown(){
+    if (!challengeActive) return;
+    const secs = Math.max(0, Math.ceil(challengeTimeLeft));
+    const urgent = secs <= 10;
+    const critical = secs <= 5;
+
+    let scale = 1;
+    if (critical){
+      const t = 1 - (secs / 5); // 0 at 5s left → 1 at 0s left
+      scale = 1 + t * 0.85;
+    }
+    const pop = 1 + challengeTickPulse * 0.4;
+    const size = Math.round(44 * scale * pop);
+
+    const glowRGB = urgent ? "255,45,60" : "255,255,255";
+    const fill = urgent ? "#ff2d3c" : "#eef1f7";
+
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `${size}px 'Press Start 2P', monospace`;
+    ctx.shadowColor = `rgba(${glowRGB},.95)`;
+    ctx.shadowBlur = 20 + challengeTickPulse * 22;
+    ctx.fillStyle = fill;
+    ctx.fillText(String(secs), W/2, 112);
+    // second pass: wider, softer bloom for the pixel "smear" glow
+    ctx.shadowBlur = 42 + challengeTickPulse * 30;
+    ctx.globalAlpha = 0.55;
+    ctx.fillText(String(secs), W/2, 112);
+    ctx.restore();
+  }
+
   // ---------- sizing ----------
   function fitCanvas(){
     const rect = stage.getBoundingClientRect();
@@ -823,6 +869,7 @@
     drawGlove("right");
     drawSmoke();
     drawParticles();
+    drawChallengeCountdown();
     ctx.restore();
   }
   function loop(ts){
