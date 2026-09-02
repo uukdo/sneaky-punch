@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sneaky Punch</title>
-  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="icon" href="assets/favicon.png?v=2" type="image/png">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=Press+Start+2P&display=swap">
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -21,7 +21,10 @@
         </div>
       </div>
 
-      <button class="sb-rankbtn" id="sbRankBtn" type="button">🌎 GLOBAL STATS</button>
+      <div class="sb-topbar">
+        <button class="sb-rankbtn" id="sbRankBtn" type="button">🌎 STATS</button>
+        <button class="sb-rankbtn sb-challengebtn" id="sbChallengeBtn" type="button">⏱ CHALLENGE</button>
+      </div>
 
       <p class="sb-hint">PRESS ANY KEY</p>
 
@@ -46,6 +49,32 @@
         </div>
       </div>
 
+      <div class="sb-overlay" id="sbChallengeOverlay" hidden>
+        <div class="sb-card sb-rank-card">
+          <p class="sb-eyebrow">60-SECOND CHALLENGE</p>
+          <h2 class="sb-title sb-rank-title">⏱ CHALLENGE</h2>
+
+          <div id="sbChallengeIdle">
+            <ol class="sb-rank-list" id="sbChallengeList">
+              <li class="sb-rank-empty">Loading…</li>
+            </ol>
+            <button class="sb-btn" id="sbChallengeStartBtn" type="button">도전 시작 (60초)</button>
+          </div>
+
+          <div id="sbChallengeResult" hidden>
+            <p class="sb-challenge-result-label">이번 도전 기록</p>
+            <p class="sb-challenge-result-value" id="sbChallengeResultValue">0</p>
+            <form class="sb-rank-form" id="sbChallengeForm">
+              <input class="sb-rank-input" id="sbChallengeName" type="text" maxlength="12" placeholder="닉네임" autocomplete="off">
+              <button class="sb-btn sb-rank-submit" type="submit">등록하기</button>
+            </form>
+          </div>
+
+          <p class="sb-rank-status" id="sbChallengeStatus"></p>
+          <button class="sb-btn sb-rank-close" id="sbChallengeCloseBtn" type="button">닫기</button>
+        </div>
+      </div>
+
       <div class="sb-overlay" id="sbIntro">
         <div class="sb-card">
           <p class="sb-eyebrow">STRESS RELIEF · SECRET BOXING</p>
@@ -56,6 +85,7 @@
             <li><span class="sb-key">클릭</span><span>마우스로 직접 때려도 ㄱㅊ</span></li>
             <li><span class="sb-key">콤보</span><span>쉬지 않고 패대면 콤보가 쌓여요</span></li>
             <li><span class="sb-key">100%</span><span>게이지가 가득 차면 스팀이 막</span></li>
+            <li><span class="sb-key">CHALLENGE</span><span>60초 동안 최대한 많이 패고 닉네임으로 순위 등록</span></li>
           </ul>
           <button class="sb-btn" id="sbStartBtn">Start</button>
           <div class="sb-stat-row"><span>통산 개인 펀치 <b id="sbTotalIntro">0</b>회 · 최고 콤보 <b id="sbBestIntro">0</b></span></div>

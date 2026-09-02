@@ -128,11 +128,15 @@ canvas.sb-canvas{ display:block; width:100%; height:100%; touch-action:manipulat
   transition:width .12s ease-out;
 }
 
-.sb-rankbtn{
+.sb-topbar{
   position:absolute;
   top:16px; left:50%;
   transform:translateX(-50%);
   z-index:7;
+  display:flex;
+  gap:8px;
+}
+.sb-rankbtn{
   font-family:"Press Start 2P",monospace;
   font-size:9px;
   letter-spacing:.5px;
@@ -143,11 +147,25 @@ canvas.sb-canvas{ display:block; width:100%; height:100%; touch-action:manipulat
   padding:7px 10px;
   cursor:pointer;
   box-shadow:0 0 14px -3px rgba(255,194,60,.55);
+  white-space:nowrap;
 }
 .sb-rankbtn:hover{ color:#fff; }
 .sb-rankbtn:focus-visible{ outline:3px solid var(--cool); outline-offset:2px; }
+.sb-rankbtn.sb-challengebtn{
+  color:var(--hot);
+  border-color:rgba(255,61,120,.4);
+  box-shadow:0 0 14px -3px rgba(255,61,120,.55);
+}
+.sb-rankbtn:disabled{
+  cursor:default;
+  opacity:.85;
+  color:#fff;
+}
+@media (max-width:480px){
+  .sb-rankbtn{ font-size:7px; padding:6px 7px; }
+}
 
-.sb-rank-card{ width:min(400px,94%); }
+.sb-rank-card{ width:min(420px,94%); }
 .sb-rank-title{ font-size:22px !important; }
 
 .sb-stat-grid{
@@ -157,11 +175,12 @@ canvas.sb-canvas{ display:block; width:100%; height:100%; touch-action:manipulat
   margin:0 0 16px;
 }
 .sb-stat-box{
+  min-width:0;
   display:flex;
   flex-direction:column;
   align-items:center;
   gap:8px;
-  padding:16px 8px;
+  padding:14px 6px;
   background:rgba(255,255,255,.03);
   border:1px solid var(--panel-edge);
   border-radius:10px;
@@ -174,7 +193,10 @@ canvas.sb-canvas{ display:block; width:100%; height:100%; touch-action:manipulat
 }
 .sb-stat-box-value{
   font-family:"Press Start 2P",monospace;
-  font-size:22px;
+  font-size:18px;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  text-align:center;
   color:var(--cool);
   text-shadow:0 0 4px #fff8, 0 0 10px var(--cool), 0 0 22px rgba(52,231,200,.7);
 }
@@ -183,11 +205,95 @@ canvas.sb-canvas{ display:block; width:100%; height:100%; touch-action:manipulat
   text-shadow:0 0 4px #fff8, 0 0 10px var(--gold), 0 0 22px rgba(255,194,60,.7);
 }
 
+.sb-rank-list{
+  list-style:none;
+  margin:0 0 16px;
+  padding:0;
+  display:grid;
+  gap:6px;
+  max-height:220px;
+  overflow-y:auto;
+  text-align:left;
+}
+.sb-rank-list li{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 10px;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--panel-edge);
+  border-radius:8px;
+  font-size:13px;
+  color:var(--ink-soft);
+}
+.sb-rank-list .sb-rank-pos{
+  font-family:"Press Start 2P",monospace;
+  font-size:10px;
+  color:var(--gold);
+  width:22px;
+  flex:none;
+}
+.sb-rank-list .sb-rank-name{
+  flex:1;
+  color:var(--ink);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.sb-rank-list .sb-rank-score{
+  font-family:"Press Start 2P",monospace;
+  font-size:11px;
+  color:var(--hot);
+  text-shadow:0 0 8px rgba(255,61,120,.6);
+  flex:none;
+}
+.sb-rank-empty{
+  justify-content:center;
+  color:var(--ink-soft);
+  font-size:13px;
+}
+
+.sb-challenge-result-label{
+  font-size:12px;
+  color:var(--ink-soft);
+  margin:0 0 6px;
+}
+.sb-challenge-result-value{
+  font-family:"Press Start 2P",monospace;
+  font-size:40px;
+  color:var(--hot);
+  text-shadow:0 0 6px #fff8, 0 0 14px var(--hot), 0 0 30px rgba(255,61,120,.7);
+  margin:0 0 18px;
+}
+
+.sb-rank-form{
+  display:flex;
+  gap:8px;
+  margin-bottom:6px;
+}
+.sb-rank-input{
+  flex:1;
+  min-width:0;
+  background:rgba(0,0,0,.35);
+  border:1px solid var(--panel-edge);
+  border-radius:8px;
+  padding:10px 12px;
+  color:var(--ink);
+  font-family:"Noto Sans KR",sans-serif;
+  font-size:13px;
+}
+.sb-rank-input:focus-visible{ outline:2px solid var(--cool); }
+.sb-rank-submit{
+  font-size:13px;
+  padding:10px 16px;
+  flex:none;
+}
+
 .sb-rank-status{
   min-height:16px;
   font-size:12px;
   color:var(--cool);
-  margin:0 0 14px;
+  margin:10px 0 14px;
 }
 .sb-rank-close{
   background:transparent;

@@ -43,5 +43,43 @@ window.Leaderboard = (() => {
     }
   }
 
-  return { configured, fetchGlobal, reportProgress };
+  // ---------- 60-second Challenge leaderboard (named, per-player) ----------
+  async function fetchChallengeTop(limit){
+    limit = limit || 10;
+    if (!configured()) return { ok:false, reason:"not-configured" };
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/challenge_scores?select=name,punches&order=punches.desc&limit=${limit}`,
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+      );
+      if (!res.ok) return { ok:false, reason:"http-" + res.status };
+      const rows = await res.json();
+      return { ok:true, rows };
+    } catch (e) {
+      return { ok:false, reason:"network" };
+    }
+  }
+
+  async function submitChallengeScore(name, punches){
+    if (!configured()) return { ok:false, reason:"not-configured" };
+    const cleanName = String(name || "").trim().slice(0, 12) || "Anonymous";
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/challenge_scores`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal"
+        },
+        body: JSON.stringify({ name: cleanName, punches: punches|0 })
+      });
+      if (!res.ok) return { ok:false, reason:"http-" + res.status };
+      return { ok:true };
+    } catch (e) {
+      return { ok:false, reason:"network" };
+    }
+  }
+
+  return { configured, fetchGlobal, reportProgress, fetchChallengeTop, submitChallengeScore };
 })();

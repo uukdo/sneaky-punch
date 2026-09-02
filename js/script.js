@@ -27,6 +27,17 @@
   const rankCloseBtn = document.getElementById("sbRankCloseBtn");
   const globalPunchesEl = document.getElementById("sbGlobalPunches");
   const globalComboEl = document.getElementById("sbGlobalCombo");
+  const challengeBtn = document.getElementById("sbChallengeBtn");
+  const challengeOverlay = document.getElementById("sbChallengeOverlay");
+  const challengeIdle = document.getElementById("sbChallengeIdle");
+  const challengeList = document.getElementById("sbChallengeList");
+  const challengeStartBtn = document.getElementById("sbChallengeStartBtn");
+  const challengeResult = document.getElementById("sbChallengeResult");
+  const challengeResultValue = document.getElementById("sbChallengeResultValue");
+  const challengeForm = document.getElementById("sbChallengeForm");
+  const challengeNameInput = document.getElementById("sbChallengeName");
+  const challengeStatus = document.getElementById("sbChallengeStatus");
+  const challengeCloseBtn = document.getElementById("sbChallengeCloseBtn");
 
   // ---------- persistence ----------
   let totalPunches = 0, bestCombo = 0;
@@ -389,7 +400,7 @@
       text: ONOMATOPOEIA[Math.floor(Math.random()*ONOMATOPOEIA.length)],
       spin: (Math.random()-0.5)*0.5
     });
-    // little dust puff at the contact point — tactile "stress knocked loose" feel
+
     for (let i=0;i<4;i++){
       const a = Math.random()*Math.PI*2;
       const spd = 30+Math.random()*50;
@@ -459,7 +470,7 @@
     }
     smokeParticles = smokeParticles.filter(s => s.t < s.life);
 
-    // ambient wisps rise off the bag as the stress gauge fills — more, and
+
     // faster, the closer you get to a full release
     if (!reduceMotion){
       ambientSmokeTimer -= dt;
@@ -503,7 +514,7 @@
     shakeMag = magnitude;
   }
 
-  // ---------- combo / gauge state ----------
+  // ---------- state ----------
   let combo = 0, comboTimer = 0;
   let stress = 0;
   let celebrated = false;
@@ -513,6 +524,7 @@
     comboTimer = 1.3;
     totalPunches += 1;
     unsyncedPunches += 1;
+    if (challengeActive) challengePunches += 1;
     if (combo > bestCombo){ bestCombo = combo; }
     stress = Math.min(100, stress + 4.5);
     if (stress >= 100 && !celebrated){
@@ -620,7 +632,7 @@
     globalPunchesEl.textContent = "…";
     globalComboEl.textContent = "…";
     rankStatus.textContent = "";
-    await flushGlobalStats(); // push anything pending first so this feels current
+    await flushGlobalStats(); 
     if (!window.Leaderboard || !window.Leaderboard.configured()){
       globalPunchesEl.textContent = "–";
       globalComboEl.textContent = "–";
@@ -647,6 +659,142 @@
   rankBtn.addEventListener("click", openRank);
   rankCloseBtn.addEventListener("click", closeRank);
   rankOverlay.addEventListener("click", (e) => { if (e.target === rankOverlay) closeRank(); });
+
+  // ---------- 60-second Challenge (named leaderboard) ----------
+  let challengeActive = false;
+  let challengeTimeLeft = 0;
+  let challengePunches = 0;
+  let lastChallengeScore = null;   // last completed run's punch count or null
+  let lastChallengeSubmitted = false;
+  const CHALLENGE_DURATION = 60;
+
+  try { challengeNameInput.value = localStorage.getItem("sbChallengeName") || ""; } catch(e){}
+
+  function updateChallengeButton(){
+    if (challengeActive){
+      const secs = Math.ceil(challengeTimeLeft);
+      challengeBtn.textContent = `⏱ 0:${String(secs).padStart(2,"0")}`;
+      challengeBtn.disabled = true;
+    } else {
+      challengeBtn.textContent = "⏱ CHALLENGE";
+      challengeBtn.disabled = false;
+    }
+  }
+
+  function stepChallenge(dt){
+    if (!challengeActive) return;
+    const prevSec = Math.ceil(challengeTimeLeft);
+    challengeTimeLeft -= dt;
+    if (Math.ceil(challengeTimeLeft) !== prevSec) updateChallengeButton();
+    if (challengeTimeLeft <= 0){
+      challengeActive = false;
+      challengeTimeLeft = 0;
+      lastChallengeScore = challengePunches;
+      lastChallengeSubmitted = false;
+      updateChallengeButton();
+      showChallengeResult();
+      challengeOverlay.hidden = false;
+    }
+  }
+
+  function renderChallengeRows(rows){
+    challengeList.innerHTML = "";
+    if (!rows.length){
+      const li = document.createElement("li");
+      li.className = "sb-rank-empty";
+      li.textContent = "아직 등록된 기록이 없어요 — 첫 번째가 되어보세요!";
+      challengeList.appendChild(li);
+      return;
+    }
+    rows.forEach((row, i) => {
+      const li = document.createElement("li");
+      const pos = document.createElement("span");
+      pos.className = "sb-rank-pos";
+      pos.textContent = "#" + (i+1);
+      const name = document.createElement("span");
+      name.className = "sb-rank-name";
+      name.textContent = row.name;
+      const score = document.createElement("span");
+      score.className = "sb-rank-score";
+      score.textContent = row.punches;
+      li.append(pos, name, score);
+      challengeList.appendChild(li);
+    });
+  }
+
+  async function loadChallengeList(){
+    challengeList.innerHTML = '<li class="sb-rank-empty">Loading…</li>';
+    if (!window.Leaderboard || !window.Leaderboard.configured()){
+      challengeList.innerHTML = '<li class="sb-rank-empty">아직 설정되지 않았어요 (README.md 참고)</li>';
+      return;
+    }
+    const res = await window.Leaderboard.fetchChallengeTop(10);
+    if (!res.ok){
+      challengeList.innerHTML = '<li class="sb-rank-empty">불러오지 못했어요. 잠시 후 다시 시도해주세요.</li>';
+      return;
+    }
+    renderChallengeRows(res.rows);
+  }
+
+  function showChallengeIdle(){
+    challengeIdle.hidden = false;
+    challengeResult.hidden = true;
+    challengeStatus.textContent = "";
+    loadChallengeList();
+  }
+
+  function showChallengeResult(){
+    challengeIdle.hidden = true;
+    challengeResult.hidden = false;
+    challengeStatus.textContent = "";
+    challengeResultValue.textContent = lastChallengeScore;
+  }
+
+  function openChallenge(){
+    challengeOverlay.hidden = false;
+    if (lastChallengeScore !== null && !lastChallengeSubmitted){
+      showChallengeResult();
+    } else {
+      showChallengeIdle();
+    }
+  }
+  function closeChallenge(){ challengeOverlay.hidden = true; }
+
+  function startChallenge(){
+    challengeActive = true;
+    challengeTimeLeft = CHALLENGE_DURATION;
+    challengePunches = 0;
+    lastChallengeScore = null;
+    updateChallengeButton();
+    challengeOverlay.hidden = true;
+  }
+
+  challengeBtn.addEventListener("click", openChallenge);
+  challengeCloseBtn.addEventListener("click", closeChallenge);
+  challengeOverlay.addEventListener("click", (e) => { if (e.target === challengeOverlay) closeChallenge(); });
+  challengeStartBtn.addEventListener("click", startChallenge);
+
+  challengeForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!window.Leaderboard || !window.Leaderboard.configured()){
+      challengeStatus.textContent = "아직 설정되지 않았어요 (README.md 참고)";
+      return;
+    }
+    const name = challengeNameInput.value.trim();
+    if (!name){
+      challengeStatus.textContent = "닉네임을 입력해주세요.";
+      return;
+    }
+    try { localStorage.setItem("sbChallengeName", name); } catch(err){}
+    challengeStatus.textContent = "등록 중…";
+    const res = await window.Leaderboard.submitChallengeScore(name, lastChallengeScore);
+    if (!res.ok){
+      challengeStatus.textContent = "등록에 실패했어요. 잠시 후 다시 시도해주세요.";
+      return;
+    }
+    lastChallengeSubmitted = true;
+    showChallengeIdle();
+  });
 
   // ---------- sizing ----------
   function fitCanvas(){
@@ -684,6 +832,7 @@
     stepPunches(dt);
     stepSmoke(dt);
     stepMeta(dt);
+    stepChallenge(dt);
     render();
     requestAnimationFrame(loop);
   }
