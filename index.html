@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sneaky Punch</title>
+  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=Press+Start+2P&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="sb-root">
+    <div class="sb-stage" id="sbStage">
+      <canvas class="sb-canvas" id="sbCanvas"></canvas>
+
+      <div class="sb-hud">
+        <div class="sb-combo"><span class="sb-combo-n" id="sbComboN">0</span><span class="sb-combo-l">COMBO</span></div>
+        <div class="sb-gauge-wrap">
+          <div class="sb-gauge-label"><span>BAD!</span><span id="sbGaugeN">0%</span></div>
+          <div class="sb-gauge-track"><div class="sb-gauge-fill" id="sbGaugeFill"></div></div>
+        </div>
+      </div>
+
+      <p class="sb-hint">PRESS ANY KEY</p>
+
+      <div class="sb-overlay" id="sbIntro">
+        <div class="sb-card">
+          <p class="sb-eyebrow">STRESS RELIEF · SECRET BOXING</p>
+          <h1 class="sb-title">Sneaky Punch</h1>
+          <p class="sb-sub">키보드로 샌드백 마구 치기<br>스트레스 해소용 미니게임</p>
+          <ul class="sb-rules">
+            <li><span class="sb-key">아무 키</span><span>누를 때마다 샌드백 한 대씩 손가락 운동</span></li>
+            <li><span class="sb-key">클릭</span><span>마우스로 직접 때려도 ㄱㅊ</span></li>
+            <li><span class="sb-key">콤보</span><span>쉬지 않고 패대면 콤보가 쌓여요</span></li>
+            <li><span class="sb-key">100%</span><span>게이지가 가득 차면 스팀이 터져요</span></li>
+          </ul>
+          <button class="sb-btn" id="sbStartBtn">Start</button>
+          <div class="sb-stat-row"><span>통산 펀치 <b id="sbTotalIntro">0</b>회 · 최고 콤보 <b id="sbBestIntro">0</b></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
