@@ -60,19 +60,20 @@ window.Leaderboard = (() => {
     }
   }
 
+  // upserts via a Postgres function: one row per nickname, only ever raised
+  // to a new personal best — never a fresh duplicate row
   async function submitChallengeScore(name, punches){
     if (!configured()) return { ok:false, reason:"not-configured" };
     const cleanName = String(name || "").trim().slice(0, 12) || "Anonymous";
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/challenge_scores`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/submit_challenge_score`, {
         method: "POST",
         headers: {
           apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal"
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ name: cleanName, punches: punches|0 })
+        body: JSON.stringify({ p_name: cleanName, p_punches: punches|0 })
       });
       if (!res.ok) return { ok:false, reason:"http-" + res.status };
       return { ok:true };
