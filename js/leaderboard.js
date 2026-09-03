@@ -43,13 +43,17 @@ window.Leaderboard = (() => {
     }
   }
 
-  // ---------- 60-second Challenge leaderboard (named, per-player) ----------
-  async function fetchChallengeTop(limit){
+  function kstDateStr(offsetDays){
+    const now = new Date(Date.now() + (offsetDays||0)*86400000);
+    return new Intl.DateTimeFormat("en-CA", { timeZone:"Asia/Seoul" }).format(now);
+  }
+
+  async function fetchChallengeTop(limit, dateStr){
     limit = limit || 10;
     if (!configured()) return { ok:false, reason:"not-configured" };
     try {
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/challenge_scores?select=name,punches&order=punches.desc&limit=${limit}`,
+        `${SUPABASE_URL}/rest/v1/challenge_scores?select=name,punches&play_date=eq.${dateStr}&order=punches.desc&limit=${limit}`,
         { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
       );
       if (!res.ok) return { ok:false, reason:"http-" + res.status };
@@ -60,8 +64,6 @@ window.Leaderboard = (() => {
     }
   }
 
-  // upserts via a Postgres function: one row per nickname, only ever raised
-  // to a new personal best — never a fresh duplicate row
   async function submitChallengeScore(name, punches){
     if (!configured()) return { ok:false, reason:"not-configured" };
     const cleanName = String(name || "").trim().slice(0, 12) || "Anonymous";
@@ -82,5 +84,27 @@ window.Leaderboard = (() => {
     }
   }
 
-  return { configured, fetchGlobal, reportProgress, fetchChallengeTop, submitChallengeScore };
+  async function renameChallengeScore(oldName, newName){
+    if (!configured()) return { ok:false, reason:"not-configured" };
+    const cleanOld = String(oldName || "").trim().slice(0, 12);
+    const cleanNew = String(newName || "").trim().slice(0, 12);
+    if (!cleanOld || !cleanNew) return { ok:false, reason:"invalid-name" };
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/rename_challenge_score`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ p_old_name: cleanOld, p_new_name: cleanNew })
+      });
+      if (!res.ok) return { ok:false, reason:"http-" + res.status };
+      return { ok:true };
+    } catch (e) {
+      return { ok:false, reason:"network" };
+    }
+  }
+
+  return { configured, fetchGlobal, reportProgress, fetchChallengeTop, submitChallengeScore, renameChallengeScore, kstDateStr };
 })();

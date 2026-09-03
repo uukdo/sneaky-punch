@@ -32,6 +32,12 @@
   const challengeIdle = document.getElementById("sbChallengeIdle");
   const challengeList = document.getElementById("sbChallengeList");
   const challengeStartBtn = document.getElementById("sbChallengeStartBtn");
+  const sideListYesterday = document.getElementById("sbSideListYesterday");
+  const sideListToday = document.getElementById("sbSideListToday");
+  const nicknameEditBtn = document.getElementById("sbNicknameEditBtn");
+  const nicknameEditForm = document.getElementById("sbNicknameEditForm");
+  const nicknameEditInput = document.getElementById("sbNicknameEditInput");
+  const nicknameEditStatus = document.getElementById("sbNicknameEditStatus");
   const challengeResult = document.getElementById("sbChallengeResult");
   const challengeResultValue = document.getElementById("sbChallengeResultValue");
   const challengeForm = document.getElementById("sbChallengeForm");
@@ -658,13 +664,13 @@
     }
   }
 
-  function renderChallengeRows(rows){
-    challengeList.innerHTML = "";
+  function renderChallengeRows(listEl, rows){
+    listEl.innerHTML = "";
     if (!rows.length){
       const li = document.createElement("li");
       li.className = "sb-rank-empty";
       li.textContent = "아직 등록된 기록이 없어요 — 첫 번째가 되어보세요!";
-      challengeList.appendChild(li);
+      listEl.appendChild(li);
       return;
     }
     rows.forEach((row, i) => {
@@ -680,7 +686,7 @@
       score.className = "sb-rank-score";
       score.textContent = row.punches;
       li.append(pos, name, score);
-      challengeList.appendChild(li);
+      listEl.appendChild(li);
     });
   }
 
@@ -690,12 +696,29 @@
       challengeList.innerHTML = '<li class="sb-rank-empty">아직 설정되지 않았어요 (README.md 참고)</li>';
       return;
     }
-    const res = await window.Leaderboard.fetchChallengeTop(10);
+    const res = await window.Leaderboard.fetchChallengeTop(10, window.Leaderboard.kstDateStr(0));
     if (!res.ok){
       challengeList.innerHTML = '<li class="sb-rank-empty">불러오지 못했어요. 잠시 후 다시 시도해주세요.</li>';
       return;
     }
-    renderChallengeRows(res.rows);
+    renderChallengeRows(challengeList, res.rows);
+  }
+
+  async function loadSideLists(){
+    if (!sideListYesterday || !sideListToday) return;
+    if (!window.Leaderboard || !window.Leaderboard.configured()){
+      sideListYesterday.innerHTML = '<li class="sb-rank-empty">–</li>';
+      sideListToday.innerHTML = '<li class="sb-rank-empty">–</li>';
+      return;
+    }
+    const [resY, resT] = await Promise.all([
+      window.Leaderboard.fetchChallengeTop(6, window.Leaderboard.kstDateStr(-1)),
+      window.Leaderboard.fetchChallengeTop(6, window.Leaderboard.kstDateStr(0))
+    ]);
+    if (resY.ok) renderChallengeRows(sideListYesterday, resY.rows);
+    else sideListYesterday.innerHTML = '<li class="sb-rank-empty">–</li>';
+    if (resT.ok) renderChallengeRows(sideListToday, resT.rows);
+    else sideListToday.innerHTML = '<li class="sb-rank-empty">–</li>';
   }
 
   function showChallengeIdle(){
@@ -756,7 +779,52 @@
     }
     lastChallengeSubmitted = true;
     showChallengeIdle();
+    loadSideLists();
   });
+
+  nicknameEditBtn.addEventListener("click", () => {
+    nicknameEditForm.hidden = !nicknameEditForm.hidden;
+    nicknameEditStatus.textContent = "";
+    if (!nicknameEditForm.hidden){
+      let stored = "";
+      try { stored = localStorage.getItem("sbChallengeName") || ""; } catch(err){}
+      nicknameEditInput.value = stored;
+      nicknameEditInput.focus();
+    }
+  });
+
+  nicknameEditForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    let oldName = "";
+    try { oldName = localStorage.getItem("sbChallengeName") || ""; } catch(err){}
+    const newName = nicknameEditInput.value.trim();
+    if (!oldName){
+      nicknameEditStatus.textContent = "오늘 등록된 기록이 없어요.";
+      return;
+    }
+    if (!newName){
+      nicknameEditStatus.textContent = "새 닉네임을 입력해주세요.";
+      return;
+    }
+    if (!window.Leaderboard || !window.Leaderboard.configured()){
+      nicknameEditStatus.textContent = "아직 설정되지 않았어요.";
+      return;
+    }
+    nicknameEditStatus.textContent = "변경 중…";
+    const res = await window.Leaderboard.renameChallengeScore(oldName, newName);
+    if (!res.ok){
+      nicknameEditStatus.textContent = "변경에 실패했어요. 오늘 등록한 기록이 맞는지 확인해주세요.";
+      return;
+    }
+    try { localStorage.setItem("sbChallengeName", newName); } catch(err){}
+    challengeNameInput.value = newName;
+    nicknameEditForm.hidden = true;
+    loadSideLists();
+    loadChallengeList();
+  });
+
+  loadSideLists();
+  setInterval(loadSideLists, 20000);
 
   // 챌린지 카운트다운 (10초 이하면 빨강, 5초 이하면 확대)
   function drawChallengeCountdown(){

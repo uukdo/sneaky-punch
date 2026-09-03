@@ -7,10 +7,17 @@
   <link rel="icon" href="assets/favicon.png?v=2" type="image/png">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=Press+Start+2P&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css">
-  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body>
   <div class="sb-root">
+    <aside class="sb-side sb-side-left">
+      <p class="sb-side-label">어제 최고</p>
+      <ol class="sb-rank-list" id="sbSideListYesterday">
+        <li class="sb-rank-empty">Loading…</li>
+      </ol>
+    </aside>
+
     <div class="sb-stage" id="sbStage">
       <canvas class="sb-canvas" id="sbCanvas"></canvas>
 
@@ -93,9 +100,21 @@
         </div>
       </div>
     </div>
+
+    <aside class="sb-side sb-side-right">
+      <p class="sb-side-label">오늘 랭킹</p>
+      <ol class="sb-rank-list" id="sbSideListToday">
+        <li class="sb-rank-empty">Loading…</li>
+      </ol>
+      <button class="sb-pixel-edit" id="sbNicknameEditBtn" type="button">✎ 닉네임 수정</button>
+      <form class="sb-pixel-edit-form" id="sbNicknameEditForm" hidden>
+        <input class="sb-pixel-edit-input" id="sbNicknameEditInput" type="text" maxlength="12" placeholder="새 닉네임" autocomplete="off">
+        <p class="sb-pixel-edit-status" id="sbNicknameEditStatus"></p>
+      </form>
+    </aside>
   </div>
 
-  <script src="js/leaderboard.js?v=3"></script>
-  <script src="js/script.js?v=4"></script>
+  <script src="js/leaderboard.js?v=4"></script>
+  <script src="js/script.js?v=8"></script>
 </body>
 </html>
